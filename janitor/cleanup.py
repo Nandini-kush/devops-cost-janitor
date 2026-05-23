@@ -2,6 +2,10 @@ import boto3
 import json
 import logging
 from datetime import datetime
+import yaml
+
+with open("config/settings.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
 logging.basicConfig(
     filename="logs/janitor.log",
@@ -13,12 +17,7 @@ logging.basicConfig(
 session = boto3.session.Session()
 
 # REQUIRED TAGS
-required_tags = [
-    "Project",
-    "Environment",
-    "Owner",
-    "ManagedBy"
-]
+required_tags = config["required_tags"]
 
 report = {
     "scan_time": str(datetime.now()),
@@ -30,8 +29,8 @@ report = {
 # S3 CLIENT
 s3 = session.client(
     "s3",
-    region_name="us-east-1",
-    endpoint_url="http://localhost:4566",
+    region_name=config["aws"]["region"],
+    endpoint_url=config["aws"]["endpoint"],
     aws_access_key_id="test",
     aws_secret_access_key="test"
 )
@@ -39,8 +38,8 @@ s3 = session.client(
 # EC2 CLIENT
 ec2 = session.client(
     "ec2",
-    region_name="us-east-1",
-    endpoint_url="http://localhost:4566",
+    region_name=config["aws"]["region"],
+    endpoint_url=config["aws"]["endpoint"],
     aws_access_key_id="test",
     aws_secret_access_key="test"
 )

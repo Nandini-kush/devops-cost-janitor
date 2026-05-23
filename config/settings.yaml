@@ -1,0 +1,18 @@
+project:
+  name: NimbusKart
+  environment: dev
+  owner: Nandini
+
+aws:
+  region: us-east-1
+  endpoint: http://localhost:4566
+
+required_tags:
+  - Project
+  - Environment
+  - Owner
+  - ManagedBy
+
+cleanup_rules:
+  detect_unattached_ebs: true
+  detect_missing_tags: true
