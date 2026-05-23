@@ -3,9 +3,26 @@ import json
 import logging
 from datetime import datetime
 import yaml
+import argparse
 
 with open("config/settings.yaml", "r") as file:
     config = yaml.safe_load(file)
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--report-only",
+    action="store_true",
+    help="Generate report only"
+)
+
+parser.add_argument(
+    "--detect-orphans",
+    action="store_true",
+    help="Detect unattached EBS volumes"
+)
+
+args = parser.parse_args()
 
 logging.basicConfig(
     filename="logs/janitor.log",
@@ -103,16 +120,17 @@ for bucket in bucket_response["Buckets"]:
 volume_response = ec2.describe_volumes()
 
 print("\nEBS Volumes:")
-print("\nOrphan Volume Detection")
-print("------------------------")
+if args.detect_orphans:
+   print("\nOrphan Volume Detection")
+   print("------------------------")
 
-for volume in volume_response["Volumes"]:
+   for volume in volume_response["Volumes"]:
 
-    volume_id = volume["VolumeId"]
+     volume_id = volume["VolumeId"]
 
-    attachments = volume.get("Attachments", [])
+     attachments = volume.get("Attachments", [])
 
-    if len(attachments) == 0:
+     if len(attachments) == 0:
 
         print(f"{volume_id} is unattached ⚠️")
 
@@ -121,8 +139,9 @@ for volume in volume_response["Volumes"]:
             "issue": "Unattached EBS Volume"
         })
 
-    else:
+     else:
         print(f"{volume_id} is attached ✅")
+    
 print("----------------")
 
 for volume in volume_response["Volumes"]:
@@ -142,6 +161,8 @@ for bucket in bucket_response["Buckets"]:
 for volume in volume_response["Volumes"]:
     print(f"Would inspect EBS volume: {volume['VolumeId']}")
 
+if args.report_only:
+    print("\nRunning in report-only mode")
 print("\nCost Janitor scan completed successfully ✅")
 logging.info("Cost Janitor scan completed successfully")
 
