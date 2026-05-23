@@ -40,7 +40,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install Dependencies
-        run: pip install boto3 colorama
+        run: pip install boto3 colorama pyyaml pytest
 
       - name: Run Python Syntax Check
         run: python -m py_compile janitor/cleanup.py
+
+      - name: Run Unit Tests
+        run: pytest
