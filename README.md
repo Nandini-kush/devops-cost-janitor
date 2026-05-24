@@ -250,16 +250,25 @@ GitHub Actions automatically performs:
 
 ## Terraform Apply
 
+![Terraform Apply](screenshots/terraform-apply.png)
+
+---
 
 ## Dashboard Report
-(Add screenshot here)
+
+![Dashboard](screenshots/dashboard.png)
+
+---
 
 ## GitHub Actions Workflow
-(Add screenshot here)
+
+![GitHub Actions](screenshots/github-actions.png)
+
+---
 
 ## Orphan Detection Output
-(Add screenshot here)
 
+![Orphan Detection](screenshots/orphan-detection.png)
 ---
 
 # Future Improvements
