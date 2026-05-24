@@ -1,16 +1,13 @@
 {
-    "scan_time": "2026-05-23 15:51:20.489086",
     "buckets": [
         "nimbuskart-dev-bucket"
     ],
     "volumes": [
-        "vol-e9a20655",
-        "vol-ba1ec3a2"
+        "vol-eb2d73a5",
+        "vol-e740df00",
+        "vol-2616b8f7"
     ],
-    "issues": [
-        {
-            "resource": "vol-e9a20655",
-            "issue": "Unattached EBS Volume"
-        }
+    "orphans": [
+        "vol-eb2d73a5"
     ]
 }

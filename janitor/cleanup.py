@@ -1,21 +1,18 @@
 import boto3
-import json
-import yaml
 import argparse
-import sys
-from datetime import datetime
+import json
+import os
 
-# LOAD CONFIG
-with open("config/settings.yaml", "r") as file:
-    config = yaml.safe_load(file)
+# ----------------------------
+# ARGUMENT PARSER
+# ----------------------------
 
-# ARGUMENTS
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
     "--dry-run",
     action="store_true",
-    help="Run scan only"
+    help="Preview resources"
 )
 
 parser.add_argument(
@@ -24,62 +21,78 @@ parser.add_argument(
     help="Delete orphan resources"
 )
 
+parser.add_argument(
+    "--report-only",
+    action="store_true",
+    help="Generate report only"
+)
+
+parser.add_argument(
+    "--detect-orphans",
+    action="store_true",
+    help="Detect unattached EBS volumes"
+)
+
 args = parser.parse_args()
 
-# REQUIRED TAGS
-required_tags = config["required_tags"]
+# ----------------------------
+# AWS CLIENTS
+# ----------------------------
 
-# AWS CONFIG
-region = config["aws"]["region"]
-endpoint = config["aws"]["endpoint"]
-
-# CLIENTS
 session = boto3.session.Session()
 
 s3 = session.client(
     "s3",
-    region_name=region,
-    endpoint_url=endpoint,
+    region_name="us-east-1",
+    endpoint_url="http://localhost:4566",
     aws_access_key_id="test",
     aws_secret_access_key="test"
 )
 
 ec2 = session.client(
     "ec2",
-    region_name=region,
-    endpoint_url=endpoint,
+    region_name="us-east-1",
+    endpoint_url="http://localhost:4566",
     aws_access_key_id="test",
     aws_secret_access_key="test"
 )
 
-# REPORT STRUCTURE
-report = {
-    "scan_timestamp": datetime.utcnow().isoformat(),
-    "account_id": "000000000000",
-    "region": region,
-    "summary": {
-        "total_orphans": 0,
-        "estimated_monthly_waste_usd": 0
-    },
-    "findings": []
-}
+# ----------------------------
+# REQUIRED TAGS
+# ----------------------------
 
-markdown_summary = "# DevOps Cost Janitor Report\n\n"
+required_tags = [
+    "Project",
+    "Environment",
+    "Owner",
+    "ManagedBy"
+]
 
-# ------------------------------------
-# S3 BUCKET CHECK
-# ------------------------------------
-
-print("\nS3 Buckets")
-print("----------------")
+# ----------------------------
+# S3 BUCKETS
+# ----------------------------
 
 bucket_response = s3.list_buckets()
+
+print("\nS3 Buckets:")
+print("----------------")
+
+bucket_list = []
+
+for bucket in bucket_response["Buckets"]:
+    print(bucket["Name"])
+    bucket_list.append(bucket["Name"])
+
+# ----------------------------
+# TAG VALIDATION
+# ----------------------------
+
+print("\nTag Validation:")
+print("----------------")
 
 for bucket in bucket_response["Buckets"]:
 
     bucket_name = bucket["Name"]
-
-    print(bucket_name)
 
     try:
         tagging = s3.get_bucket_tagging(
@@ -98,228 +111,93 @@ for bucket in bucket_response["Buckets"]:
                 missing_tags.append(tag)
 
         if missing_tags:
-
-            finding = {
-                "resource_id": bucket_name,
-                "resource_type": "s3_bucket",
-                "reason": "missing_tags",
-                "age_days": 0,
-                "estimated_monthly_cost_usd": 5,
-                "tags": {},
-                "suggested_action": "review",
-                "safe_to_auto_delete": False
-            }
-
-            report["findings"].append(finding)
+            print(f"{bucket_name} missing tags: {missing_tags}")
+        else:
+            print(f"{bucket_name} is properly tagged ✅")
 
     except Exception:
         print(f"Could not read tags for {bucket_name}")
 
-# ------------------------------------
-# EBS CHECK
-# ------------------------------------
-
-print("\nEBS Volumes")
-print("----------------")
+# ----------------------------
+# EBS VOLUMES
+# ----------------------------
 
 volume_response = ec2.describe_volumes()
 
+print("\nEBS Volumes:")
+print("----------------")
+
+volume_ids = []
+
 for volume in volume_response["Volumes"]:
+    print(volume["VolumeId"])
+    volume_ids.append(volume["VolumeId"])
 
-    volume_id = volume["VolumeId"]
+# ----------------------------
+# ORPHAN DETECTION
+# ----------------------------
 
-    print(volume_id)
+orphan_volumes = []
 
-    attachments = volume.get("Attachments", [])
+if args.detect_orphans:
 
-    if len(attachments) == 0:
+    print("\nOrphan Volume Detection")
+    print("------------------------")
 
-        print(f"{volume_id} is unattached ⚠️")
+    for volume in volume_response["Volumes"]:
 
-        tags = volume.get("Tags", [])
+        volume_id = volume["VolumeId"]
 
-        protected = False
+        if len(volume["Attachments"]) == 0:
+            orphan_volumes.append(volume_id)
+            print(f"{volume_id} is unattached ⚠️")
+        else:
+            print(f"{volume_id} is attached ✅")
 
-        for tag in tags:
-            if tag["Key"] == "Protected" and tag["Value"] == "true":
-                protected = True
+# ----------------------------
+# CLEANUP SIMULATION
+# ----------------------------
 
-        finding = {
-            "resource_id": volume_id,
-            "resource_type": "ebs_volume",
-            "reason": "unattached",
-            "age_days": 10,
-            "estimated_monthly_cost_usd": 8,
-            "tags": {},
-            "suggested_action": "delete",
-            "safe_to_auto_delete": not protected
-        }
+print("\nCleanup Simulation")
+print("-------------------")
 
-        report["findings"].append(finding)
+for bucket in bucket_response["Buckets"]:
+    print(f"Would inspect bucket: {bucket['Name']}")
 
-        # DELETE MODE
-        if args.delete and not protected:
+for volume in volume_response["Volumes"]:
+    print(f"Would inspect EBS volume: {volume['VolumeId']}")
 
-            print(f"Deleting {volume_id}")
+# ----------------------------
+# REPORT GENERATION
+# ----------------------------
 
-            try:
-                ec2.delete_volume(
-                    VolumeId=volume_id
-                )
+report = {
+    "buckets": bucket_list,
+    "volumes": volume_ids,
+    "orphans": orphan_volumes
+}
 
-            except Exception as error:
-                print(error)
+os.makedirs("reports", exist_ok=True)
 
-# ------------------------------------
-# STOPPED EC2 CHECK
-# ------------------------------------
+with open("reports/scan_report.json", "w") as file:
+    json.dump(report, file, indent=4)
 
-print("\nEC2 Instances")
-print("----------------")
+# ----------------------------
+# FLAGS
+# ----------------------------
 
-instance_response = ec2.describe_instances()
+if args.dry_run:
+    print("\nRunning in dry-run mode")
 
-for reservation in instance_response["Reservations"]:
+if args.report_only:
+    print("\nRunning in report-only mode")
 
-    for instance in reservation["Instances"]:
+if args.delete:
+    print("\nDelete mode enabled")
 
-        instance_id = instance["InstanceId"]
+# ----------------------------
+# SUCCESS
+# ----------------------------
 
-        state = instance["State"]["Name"]
-
-        print(f"{instance_id} -> {state}")
-
-        if state == "stopped":
-
-            finding = {
-                "resource_id": instance_id,
-                "resource_type": "ec2_instance",
-                "reason": "stopped_instance",
-                "age_days": 20,
-                "estimated_monthly_cost_usd": 15,
-                "tags": {},
-                "suggested_action": "terminate",
-                "safe_to_auto_delete": False
-            }
-
-            report["findings"].append(finding)
-
-# ------------------------------------
-# ELASTIC IP CHECK
-# ------------------------------------
-
-print("\nElastic IPs")
-print("----------------")
-
-try:
-
-    eip_response = ec2.describe_addresses()
-
-    for address in eip_response["Addresses"]:
-
-        allocation_id = address.get(
-            "AllocationId",
-            "unknown"
-        )
-
-        if "InstanceId" not in address:
-
-            print(f"{allocation_id} is unused")
-
-            finding = {
-                "resource_id": allocation_id,
-                "resource_type": "elastic_ip",
-                "reason": "unused_eip",
-                "age_days": 5,
-                "estimated_monthly_cost_usd": 3,
-                "tags": {},
-                "suggested_action": "release",
-                "safe_to_auto_delete": True
-            }
-
-            report["findings"].append(finding)
-
-except Exception:
-    print("No Elastic IPs found")
-
-# ------------------------------------
-# SUMMARY
-# ------------------------------------
-
-total_cost = 0
-
-for finding in report["findings"]:
-    total_cost += finding["estimated_monthly_cost_usd"]
-
-report["summary"]["total_orphans"] = len(
-    report["findings"]
-)
-
-report["summary"][
-    "estimated_monthly_waste_usd"
-] = total_cost
-
-# ------------------------------------
-# SAVE JSON REPORT
-# ------------------------------------
-
-with open(
-    "reports/report.json",
-    "w",
-    encoding="utf-8"
-) as file:
-
-    json.dump(
-        report,
-        file,
-        indent=4
-    )
-
-# ------------------------------------
-# MARKDOWN REPORT
-# ------------------------------------
-
-markdown_summary += f"""
-## Summary
-
-Total Orphans: {report['summary']['total_orphans']}
-
-Estimated Monthly Waste: ${total_cost}
-
----
-
-## Findings
-
-"""
-
-for finding in report["findings"]:
-
-    markdown_summary += f"""
-### {finding['resource_id']}
-
-- Type: {finding['resource_type']}
-- Reason: {finding['reason']}
-- Suggested Action: {finding['suggested_action']}
-- Monthly Cost: ${finding['estimated_monthly_cost_usd']}
-
-"""
-
-with open(
-    "reports/report.md",
-    "w",
-    encoding="utf-8"
-) as file:
-
-    file.write(markdown_summary)
-
-# ------------------------------------
-# EXIT CODE
-# ------------------------------------
-
-if args.dry_run and len(report["findings"]) > 0:
-
-    print("\nOrphans detected ⚠️")
-
-    sys.exit(1)
-
-print("\nScan completed successfully ✅")
+print("\nCost Janitor scan completed successfully ✅")
+print("\nReport generated: reports/scan_report.json ✅")
