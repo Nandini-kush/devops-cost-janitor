@@ -1,1 +1,5 @@
-# (empty for now — we keep it simple for Day 2)
+variable "project" {}
+
+variable "environment" {}
+
+variable "owner" {}

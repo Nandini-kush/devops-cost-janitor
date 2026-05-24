@@ -1,7 +1,11 @@
-variable "vpc_id" {
-  type = string
-}
+variable "project" {}
 
-variable "subnet_id" {
-  type = string
-}
+variable "environment" {}
+
+variable "owner" {}
+
+variable "vpc_id" {}
+
+variable "subnet1_id" {}
+
+variable "subnet2_id" {}

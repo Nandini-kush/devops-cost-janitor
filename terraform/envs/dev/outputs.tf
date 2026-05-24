@@ -2,14 +2,18 @@ output "vpc_id" {
   value = module.network.vpc_id
 }
 
-output "subnet_id" {
-  value = module.network.subnet_id
+output "subnet1_id" {
+  value = module.network.subnet1_id
 }
 
-output "bucket_name" {
-  value = module.storage.bucket_name
+output "subnet2_id" {
+  value = module.network.subnet2_id
 }
 
-output "ebs_volume_id" {
-  value = module.storage.ebs_volume_id
+output "web1_id" {
+  value = module.compute.web1_id
+}
+
+output "web2_id" {
+  value = module.compute.web2_id
 }

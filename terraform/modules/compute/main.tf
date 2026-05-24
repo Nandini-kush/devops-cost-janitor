@@ -1,6 +1,7 @@
 resource "aws_security_group" "sg" {
-  name   = "dev-sg"
-  vpc_id = var.vpc_id
+  name        = "dev-sg"
+  description = "Security group for web servers"
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 22
@@ -16,6 +17,13 @@ resource "aws_security_group" "sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -25,27 +33,39 @@ resource "aws_security_group" "sg" {
 
   tags = {
     Name        = "dev-sg"
-    Project     = "NimbusKart"
-    Environment = "dev"
-    Owner       = "Nandini"
+    Project     = var.project
+    Environment = var.environment
+    Owner       = var.owner
     ManagedBy   = "terraform"
   }
 }
 
-# Temporarily disabled due to LocalStack EC2 limitations
+resource "aws_instance" "web1" {
+  ami                    = "ami-12345678"
+  instance_type          = "t3.micro"
+  subnet_id              = var.subnet1_id
+  vpc_security_group_ids = [aws_security_group.sg.id]
 
- resource "aws_instance" "app" {
-   ami           = "ami-12345678"
-   instance_type = "t2.micro"
+  tags = {
+    Name        = "web-1"
+    Project     = var.project
+    Environment = var.environment
+    Owner       = var.owner
+    ManagedBy   = "terraform"
+  }
+}
 
-   subnet_id              = var.subnet_id
-   vpc_security_group_ids = [aws_security_group.sg.id]
+resource "aws_instance" "web2" {
+  ami                    = "ami-12345678"
+  instance_type          = "t3.micro"
+  subnet_id              = var.subnet2_id
+  vpc_security_group_ids = [aws_security_group.sg.id]
 
-   tags = {
-     Name        = "dev-instance"
-     Project     = "NimbusKart"
-     Environment = "dev"
-     Owner       = "Nandini"
-     ManagedBy   = "terraform"
-   }
- }
+  tags = {
+    Name        = "web-2"
+    Project     = var.project
+    Environment = var.environment
+    Owner       = var.owner
+    ManagedBy   = "terraform"
+  }
+}

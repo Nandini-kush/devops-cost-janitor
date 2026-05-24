@@ -24,15 +24,28 @@ provider "aws" {
 
 module "network" {
   source = "../../modules/network"
+
+  project     = var.project
+  environment = var.environment
+  owner       = var.owner
 }
 
 module "compute" {
   source = "../../modules/compute"
 
-  vpc_id    = module.network.vpc_id
-  subnet_id = module.network.subnet_id
+  project     = var.project
+  environment = var.environment
+  owner       = var.owner
+
+  vpc_id     = module.network.vpc_id
+  subnet1_id = module.network.subnet1_id
+  subnet2_id = module.network.subnet2_id
 }
 
 module "storage" {
   source = "../../modules/storage"
+
+  project     = var.project
+  environment = var.environment
+  owner       = var.owner
 }
