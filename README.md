@@ -1,64 +1,85 @@
 # DevOps Cost Janitor 🚀
 
-An automated DevOps cloud governance and cost optimization tool built using:
+An automated DevOps cloud governance and cost optimization tool built using Terraform, Python, Docker, LocalStack, and GitHub Actions.
+
+This project simulates AWS infrastructure locally using LocalStack and performs automated cloud resource analysis, governance checks, orphan detection, and reporting.
+
+---
+
+# Technologies Used
 
 - Terraform
+- Python
 - Docker
 - LocalStack
-- Python
 - GitHub Actions
-- YAML Configuration
+- YAML
+- boto3
 
 ---
 
 # Features
 
-## Infrastructure as Code
-- Terraform-based AWS infrastructure
+## Infrastructure as Code (IaC)
+
+Provision AWS infrastructure using Terraform modules:
+
 - VPC
 - Subnets
-- EC2
-- S3
-- EBS
+- EC2 Instances
+- Security Groups
+- S3 Buckets
+- EBS Volumes
 
 ---
 
 ## AWS Resource Scanning
-- Detect S3 buckets
-- Detect EBS volumes
-- Analyze infrastructure resources
+
+The Python Janitor scans cloud resources and performs:
+
+- S3 bucket detection
+- EBS volume detection
+- Infrastructure analysis
 
 ---
 
 ## Governance Checks
-- Required tag validation
-- Missing tag detection
+
+Validate mandatory resource tags:
+
+- Project
+- Environment
+- Owner
+- ManagedBy
+
+Detect missing governance tags automatically.
 
 ---
 
 ## Cost Optimization
-- Detect unattached EBS volumes
-- Simulate cleanup workflows
+
+Detect potentially wasteful cloud resources:
+
+- Unattached EBS volumes
+- Unused infrastructure simulation
+- Cleanup workflow simulation
 
 ---
 
 ## Reporting
-- JSON report generation
-- HTML dashboard generation
-- Logging support
+
+Generate automated reports:
+
+- JSON reports
+- HTML dashboard
+- Infrastructure summaries
+- Orphan detection summaries
 
 ---
 
-## CI/CD
-- GitHub Actions workflow
-- Automatic validation
-- Automated testing
+# Architecture Flow
 
----
-
-## Configuration Management
-- YAML-based configuration
-- Reusable environments
+Terraform → LocalStack → AWS Resource Simulation → Python Janitor Scanner → JSON Reports → HTML Dashboard → GitHub Actions CI/CD
 
 ---
 
@@ -68,38 +89,131 @@ An automated DevOps cloud governance and cost optimization tool built using:
 devops-assignment/
 │
 ├── terraform/
+│   ├── modules/
+│   │   ├── network/
+│   │   ├── compute/
+│   │   └── storage/
+│   │
+│   └── envs/
+│       └── dev/
+│
 ├── janitor/
+│
 ├── reports/
+│
 ├── logs/
+│
 ├── config/
-├── .github/workflows/
+│
+├── .github/
+│   └── workflows/
+│
+└── README.md
 ```
+
+---
+
+# Requirements
+
+- Python 3.11+
+- Terraform
+- Docker Desktop
+- LocalStack
+- Git
+
+---
 
 # Setup Instructions
 
 ## Clone Repository
 
 ```bash
-git clone YOUR_REPO_URL
+git clone YOUR_GITHUB_REPO_URL
 ```
 
-## Install Dependencies
+---
+
+## Install Python Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install boto3 colorama pyyaml
 ```
+
+---
+
+## Start Docker
+
+Open Docker Desktop and ensure Docker Engine is running.
+
+---
 
 ## Start LocalStack
 
 ```bash
-docker run --rm -d -p 4566:4566 --name localstack localstack/localstack
+docker run --rm -d -p 4566:4566 --name localstack localstack/localstack/localstack-lite
 ```
 
-## Run Cleanup Scanner
+---
+
+# Terraform Commands
+
+## Initialize Terraform
 
 ```bash
-python janitor/cleanup.py
+tflocal init
 ```
+
+---
+
+## Validate Terraform
+
+```bash
+tflocal validate
+```
+
+---
+
+## Plan Infrastructure
+
+```bash
+tflocal plan
+```
+
+---
+
+## Apply Infrastructure
+
+```bash
+tflocal apply -auto-approve
+```
+
+---
+
+# Python Janitor Commands
+
+## Report Only Mode
+
+```bash
+python janitor/cleanup.py --report-only
+```
+
+---
+
+## Detect Orphan Resources
+
+```bash
+python janitor/cleanup.py --detect-orphans
+```
+
+---
+
+## Dry Run Mode
+
+```bash
+python janitor/cleanup.py --dry-run
+```
+
+---
 
 ## Generate Dashboard
 
@@ -107,23 +221,46 @@ python janitor/cleanup.py
 python janitor/dashboard.py
 ```
 
-# CLI Commands
+---
 
-## Report Only
+# Dashboard Preview
 
-```bash
-python janitor/cleanup.py --report-only
-```
+The HTML dashboard provides:
 
-## Detect Orphans
+- S3 bucket summaries
+- EBS volume summaries
+- Orphan detection
+- Infrastructure scan reports
+- Cost optimization insights
 
-```bash
-python janitor/cleanup.py --detect-orphans
-```
+---
+
+# CI/CD Workflow
+
+GitHub Actions automatically performs:
+
+- Terraform formatting validation
+- Python syntax validation
+- Automated testing
+- Continuous Integration checks
+
+---
 
 # Screenshots
 
-Add dashboard screenshots here.
+## Terraform Apply
+
+
+## Dashboard Report
+(Add screenshot here)
+
+## GitHub Actions Workflow
+(Add screenshot here)
+
+## Orphan Detection Output
+(Add screenshot here)
+
+---
 
 # Future Improvements
 
@@ -132,7 +269,14 @@ Add dashboard screenshots here.
 - Automated cleanup
 - Multi-region support
 - Advanced analytics
+- Scheduled scans
+
+---
 
 # Author
 
 Nandini Kushwah
+
+---
+
+This project demonstrates practical DevOps automation, Infrastructure as Code (IaC), cloud governance, cost optimization, and CI/CD pipeline implementation using modern DevOps tooling.
